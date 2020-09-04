@@ -1,13 +1,8 @@
-import {
-  _cleanup,
-  _handleRequest,
-  _onInterrupt,
-  _onTerminate,
-} from './shutdown-interface';
+import { _middleware, _shutdown } from '../utils/interfaces';
 
 var state = false;
 
-const cleanup: _cleanup = (server) => {
+const cleanup: _shutdown = (server) => {
   state = true;
   console.log('Closing http server');
   server.close(() => {
@@ -23,15 +18,15 @@ const cleanup: _cleanup = (server) => {
   }, 30 * 1000);
 };
 
-export const handleRequests = (): _handleRequest => (req, res, next) => {
+export const handleRequests = (): _middleware => (req, res, next) => {
   if (!state) return next();
 
   res.setHeader('Connection', 'close');
   res.status(503).send('Server is in the process of restarting');
 };
 
-export const onInterrupt: _onInterrupt = (server) =>
+export const onInterrupt: _shutdown = (server) =>
   process.on('SIGINT', () => cleanup(server));
 
-export const onTerminate: _onTerminate = (server) =>
+export const onTerminate: _shutdown = (server) =>
   process.on('SIGTERM', () => cleanup(server));
